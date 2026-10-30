@@ -27,7 +27,7 @@ jobs:
       - name: Run Market Analysis Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CALL_ME_BOT_KEY: ${{ secrets.CALL_ME_BOT_KEY }}
-          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python main.py
