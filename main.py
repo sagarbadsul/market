@@ -125,26 +125,29 @@ def generate_ai_summary(rules_text, api_key):
         
     return rules_text[:100]
 
-def send_whatsapp_message(message, phone, api_key):
-    """Sends the formatted message via CallMeBot API."""
-    encoded_msg = urllib.parse.quote(message)
-    url = f"https://api.callmebot.com/whatsapp.php?phone={phone}&text={encoded_msg}&apikey={api_key}"
+def send_telegram_message(message, token, chat_id):
+    """Sends the formatted message via Telegram Bot API."""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message
+    }
     
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
-            print("WhatsApp alert sent successfully.")
+            print("Telegram alert sent successfully.")
         else:
-            print(f"Failed to send WhatsApp alert. Status code: {response.status_code}")
+            print(f"Failed to send Telegram alert. Status code: {response.status_code}, Response: {response.text}")
     except Exception as e:
-        print(f"Error sending WhatsApp message: {e}")
+        print(f"Error sending Telegram message: {e}")
 
 if __name__ == "__main__":
     gemini_key = os.environ.get("GEMINI_API_KEY")
-    callmebot_key = os.environ.get("CALL_ME_BOT_KEY")
-    whatsapp_phone = os.environ.get("WHATSAPP_PHONE")
+    telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    telegram_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
 
-    if not all([gemini_key, callmebot_key, whatsapp_phone]):
+    if not all([gemini_key, telegram_token, telegram_chat_id]):
         print("Error: Missing required environment variables.")
         sys.exit(1)
 
@@ -159,5 +162,5 @@ if __name__ == "__main__":
     
     print(f"Final Output: {final_conclusion}")
     
-    print("Sending WhatsApp alert...")
-    send_whatsapp_message(final_conclusion, whatsapp_phone, callmebot_key)
+    print("Sending Telegram alert...")
+    send_telegram_message(final_conclusion, telegram_token, telegram_chat_id)
