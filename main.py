@@ -136,8 +136,8 @@ def generate_ai_summary(rules_text, api_key):
         
     return rules_text[:100]
 
-def save_web_page(data, ai_summary):
-    """Saves a rich HTML dashboard displaying actual numbers and conditional color coding."""
+def save_web_page(data, ai_summary, update_time):
+    """Saves a rich HTML dashboard displaying actual numbers, conditional colors, and update timestamp."""
     dow_color = "#22c55e" if data["dow_green"] else "#ef4444"
     nasdaq_color = "#22c55e" if data["nasdaq_green"] else "#ef4444"
     
@@ -158,7 +158,7 @@ def save_web_page(data, ai_summary):
         .ai-box {{ background: #0f172a; padding: 1.2rem; border-radius: 8px; border: 1px solid #334155; margin-bottom: 1.2rem; }}
         .ai-title {{ font-size: 0.85rem; color: #38bdf8; margin-bottom: 0.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
         .ai-text {{ font-size: 1rem; line-height: 1.5; color: #cbd5e1; margin: 0; }}
-        .footer {{ text-align: center; font-size: 0.75rem; color: #64748b; }}
+        .footer {{ text-align: center; font-size: 0.75rem; color: #64748b; line-height: 1.4; }}
     </style>
 </head>
 <body>
@@ -189,14 +189,17 @@ def save_web_page(data, ai_summary):
             <p class="ai-text">{ai_summary}</p>
         </div>
 
-        <div class="footer">Automated daily via GitHub Actions & Gemini AI</div>
+        <div class="footer">
+            Last Updated: {update_time}<br>
+            Automated daily via GitHub Actions & Gemini AI
+        </div>
     </div>
 </body>
 </html>"""
     
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("Saved index.html with live indicators.")
+    print("Saved index.html with live timestamp.")
 
 if __name__ == "__main__":
     gemini_key = os.environ.get("GEMINI_API_KEY")
@@ -214,11 +217,9 @@ if __name__ == "__main__":
     print("Generating AI synthesis...")
     final_conclusion = generate_ai_summary(rules_summary, gemini_key)
     
-    print(f"Final Output: {final_conclusion}")
-    
-    print("Saving web page dashboard...")
-    save_web_page(raw_data, final_conclusion)
-
-# IST is UTC + 5:30
+    # Generate IST timestamp
     ist_offset = timezone(timedelta(hours=5, minutes=30))
-    current_time_ist = datetime.now(ist_offset).strftime("%d %B %Y, %I:%M %p IST")
+    current_time_ist = datetime.now(ist_offset).strftime("%d %b %Y, %I:%M %p IST")
+    
+    print(f"Saving web page dashboard with timestamp: {current_time_ist}...")
+    save_web_page(raw_data, final_conclusion, current_time_ist)
