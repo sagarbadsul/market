@@ -142,6 +142,52 @@ def send_telegram_message(message, token, chat_id):
     except Exception as e:
         print(f"Error sending Telegram message: {e}")
 
+def send_telegram_message(message, token, chat_id):
+    """Sends the formatted message via Telegram Bot API."""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            print("Telegram alert sent successfully.")
+        else:
+            print(f"Failed to send Telegram alert. Status code: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print(f"Error sending Telegram message: {e}")
+
+def save_web_page(message):
+    """Saves the final AI conclusion into an HTML file for GitHub Pages."""
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Market Analysis Agent</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}
+        .card {{ background: #1e293b; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-width: 500px; text-align: center; border: 1px solid #334155; }}
+        h1 {{ font-size: 1.5rem; margin-bottom: 1rem; color: #38bdf8; }}
+        p {{ font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; }}
+        .footer {{ margin-top: 1.5rem; font-size: 0.8rem; color: #64748b; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📊 Latest Market Summary</h1>
+        <p>{message}</p>
+        <div class="footer">Automated daily via GitHub Actions & Gemini AI</div>
+    </div>
+</body>
+</html>"""
+    
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    print("Saved index.html for GitHub Pages.")
+
 if __name__ == "__main__":
     gemini_key = os.environ.get("GEMINI_API_KEY")
     telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -161,6 +207,9 @@ if __name__ == "__main__":
     final_conclusion = generate_ai_summary(rules_summary, gemini_key)
     
     print(f"Final Output: {final_conclusion}")
+    
+    print("Saving web page...")
+    save_web_page(final_conclusion)
     
     print("Sending Telegram alert...")
     send_telegram_message(final_conclusion, telegram_token, telegram_chat_id)
