@@ -24,7 +24,8 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+          pip install requests beautifulsoup4 yfinance
+
 
       - name: Run Market Analysis Agent
         env:
