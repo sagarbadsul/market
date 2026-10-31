@@ -2,9 +2,11 @@ name: Daily Market Analysis Agent
 
 on:
   schedule:
-    # Runs everyday at 9:15 PM IST (15:45 UTC)
     - cron: '45 15 * * *'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   run-market-agent:
@@ -31,3 +33,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python main.py
+
+      - name: Commit and Push Updated Web Page
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update market summary web page" && git push)
