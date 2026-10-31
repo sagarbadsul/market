@@ -218,3 +218,7 @@ if __name__ == "__main__":
     
     print("Saving web page dashboard...")
     save_web_page(raw_data, final_conclusion)
+
+# IST is UTC + 5:30
+    ist_offset = timezone(timedelta(hours=5, minutes=30))
+    current_time_ist = datetime.now(ist_offset).strftime("%d %B %Y, %I:%M %p IST")
