@@ -2,6 +2,8 @@ import os
 import sys
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime, timezone, timedelta
+
 
 def scrape_market_data():
     """Scrapes market performance with robust selectors and fallbacks."""
