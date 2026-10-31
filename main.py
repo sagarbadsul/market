@@ -3,65 +3,50 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone, timedelta
-
+import yfinance as yf
 
 def scrape_market_data():
-    """Scrapes market performance with robust selectors and fallbacks."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-    }
-    
+    """Fetches live market data using yfinance for reliable accuracy."""
     results = {
-        "dow_val": "39,120.50",
-        "dow_change": "+0.45%",
-        "dow_green": True,
-        "nasdaq_val": "16,280.10",
-        "nasdaq_change": "+0.60%",
-        "nasdaq_green": True,
+        "dow_val": "N/A",
+        "dow_change": "N/A",
+        "dow_green": False,
+        "nasdaq_val": "N/A",
+        "nasdaq_change": "N/A",
+        "nasdaq_green": False,
         "india_vix": "13.5",
-        "advances": "1,240",
-        "declines": "850"
+        "advances": "N/A",
+        "declines": "N/A"
     }
 
     try:
-        # 1. Dow Jones
-        dow_resp = requests.get("https://www.investing.com/indices/us-30", headers=headers, timeout=10)
-        if dow_resp.status_code == 200:
-            soup = BeautifulSoup(dow_resp.text, 'html.parser')
-            val_elem = soup.find('div', {'data-test': 'instrument-price-last'}) or soup.find('span', class_='text-2xl')
-            change_elem = soup.find('span', {'data-test': 'instrument-price-change-percent'})
-            if val_elem:
-                results["dow_val"] = val_elem.text.strip()
-            if change_elem:
-                change_text = change_elem.text.strip()
-                results["dow_change"] = change_text
-                results["dow_green"] = '-' not in change_text
+        # Fetch Dow Jones (^DJI) and Nasdaq Composite (^IXIC)
+        tickers = {"dow": "^DJI", "nasdaq": "^IXIC"}
+        
+        for key, symbol in tickers.items():
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="2d")
+            if not hist.empty:
+                current_price = hist['Close'].iloc[-1]
+                prev_price = hist['Close'].iloc[-2] if len(hist) > 1 else current_price
+                change_pct = ((current_price - prev_price) / prev_price) * 100
+                
+                price_str = f"{current_price:,.2f}"
+                change_str = f"{'+' if change_pct >= 0 else ''}{change_pct:.2f}%"
+                
+                results[f"{key}_val"] = price_str
+                results[f"{key}_change"] = change_str
+                results[f"{key}_green"] = change_pct >= 0
 
-        # 2. Nasdaq Composite
-        nasdaq_resp = requests.get("https://www.investing.com/indices/nasdaq-composite", headers=headers, timeout=10)
-        if nasdaq_resp.status_code == 200:
-            soup = BeautifulSoup(nasdaq_resp.text, 'html.parser')
-            val_elem = soup.find('div', {'data-test': 'instrument-price-last'}) or soup.find('span', class_='text-2xl')
-            change_elem = soup.find('span', {'data-test': 'instrument-price-change-percent'})
-            if val_elem:
-                results["nasdaq_val"] = val_elem.text.strip()
-            if change_elem:
-                change_text = change_elem.text.strip()
-                results["nasdaq_change"] = change_text
-                results["nasdaq_green"] = '-' not in change_text
+        # Fetch India VIX (^INDIAVIX) via Yahoo Finance
+        vix_ticker = yf.Ticker("^INDIAVIX")
+        vix_hist = vix_ticker.history(period="1d")
+        if not vix_hist.empty:
+            results["india_vix"] = f"{vix_hist['Close'].iloc[-1]:.2f}"
 
-        # 3. India VIX
-        vix_resp = requests.get("https://www.investing.com/indices/india-vix", headers=headers, timeout=10)
-        if vix_resp.status_code == 200:
-            soup = BeautifulSoup(vix_resp.text, 'html.parser')
-            price_elem = soup.find('div', {'data-test': 'instrument-price-last'}) or soup.find('span', class_='text-2xl')
-            if price_elem:
-                results["india_vix"] = price_elem.text.replace(',', '').strip()
-
-        # 4. NSE Advances/Declines
-        mc_resp = requests.get("https://www.moneycontrol.com/stocks/marketstats/nsemarketstats/nseadvance.php", headers=headers, timeout=10)
+        # NSE Advances/Declines fallback from Moneycontrol or static estimate if blocked
+        headers = {"User-Agent": "Mozilla/5.0"}
+        mc_resp = requests.get("https://www.moneycontrol.com/stocks/marketstats/nsemarketstats/nseadvance.php", headers=headers, timeout=5)
         if mc_resp.status_code == 200:
             soup = BeautifulSoup(mc_resp.text, 'html.parser')
             for row in soup.find_all('tr'):
@@ -73,9 +58,10 @@ def scrape_market_data():
                     results["declines"] = cols[1].text.strip()
 
     except Exception as e:
-        print(f"Warning during scraping: {e}")
+        print(f"Warning during data fetch: {e}")
 
     return results
+
     
 def process_market_rules(data):
     """Processes scraped data according to algorithmic rules."""
